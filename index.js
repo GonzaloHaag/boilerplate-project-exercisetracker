@@ -68,7 +68,7 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
     // Verificar si existe user 
     const user = await User.findById({ _id });
     if (!user) {
-      res.status(400).json({ error: 'User not found' })
+      return res.status(400).json({ error: 'User not found' })
     }
     // Si no se proporciona una fecha, usar la actual
     const exerciseDate = date ? new Date(date) : new Date();
@@ -95,6 +95,48 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Error en el servidor" });
   }
+});
+
+// GET A /api/users/:_id/logs para obtener  un registro
+/**
+ * {
+  username: "fcc_test",
+  count: 1,
+  _id: "5fb5853f734231456ccb3b05",
+  log: [{
+    description: "test",
+    duration: 60,
+    date: "Mon Jan 01 1990",
+  }]
+}
+
+ */
+
+app.get('/api/users/:_id/logs',async(req,res) => {
+  const { _id } = req.params; // id del user que viene por params 
+  try {
+    const user = await User.findById({_id});
+    if(!user) {
+      return res.status(400).json({error:'User not found'});
+    }
+    const exercices = await Exercice.find({ user:user._id });
+
+
+    res.json({
+      username:user.username,
+      count:parseInt(exercices.length),
+      _id:user._id,
+      log:exercices.map((ex) => ({
+        description:ex.description,
+        duration:ex.duration,
+        date:ex.date.toDateString()
+      }))
+    })
+    
+  } catch (error) {
+    res.status(500).json({ error: "Error en el servidor" });
+  }
+
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
