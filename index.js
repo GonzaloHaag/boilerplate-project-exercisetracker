@@ -98,41 +98,38 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 });
 
 // GET A /api/users/:_id/logs para obtener  un registro
-/**
- * {
-  username: "fcc_test",
-  count: 1,
-  _id: "5fb5853f734231456ccb3b05",
-  log: [{
-    description: "test",
-    duration: 60,
-    date: "Mon Jan 01 1990",
-  }]
-}
-
- */
-
-app.get('/api/users/:_id/logs',async(req,res) => {
+app.get('/api/users/:_id/logs', async (req, res) => {
   const { _id } = req.params; // id del user que viene por params 
+  const { from, to, limit } = req.query; // Parametros opcionales
   try {
-    const user = await User.findById({_id});
-    if(!user) {
-      return res.status(400).json({error:'User not found'});
+    const user = await User.findById({ _id });
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' });
     }
-    const exercices = await Exercice.find({ user:user._id });
+    // Filtro de fecha
+    let dateFilter = {};
+    if (from) dateFilter.$gte = new Date(from);
+    if (to) dateFilter.$lte = new Date(to);
+
+    // Buscar ejercicios con filtro de fecha y límite
+    let query = Exercice.find({ user: user._id });
+    if (from || to) query = query.where("date").gte(dateFilter.$gte).lte(dateFilter.$lte);
+    if (limit) query = query.limit(Number(limit));
+
+    const exercices = await query;
 
 
     res.json({
-      username:user.username,
-      count:parseInt(exercices.length),
-      _id:user._id,
-      log:exercices.map((ex) => ({
-        description:ex.description,
-        duration:ex.duration,
-        date:ex.date.toDateString()
+      username: user.username,
+      count: parseInt(exercices.length),
+      _id: user._id,
+      log: exercices.map((ex) => ({
+        description: ex.description,
+        duration: ex.duration,
+        date: ex.date.toDateString()
       }))
     })
-    
+
   } catch (error) {
     res.status(500).json({ error: "Error en el servidor" });
   }
